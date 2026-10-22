@@ -20,55 +20,44 @@
  *
  * Tone.js documentation: https://tonejs.github.io/docs/15.1.22/
  */
-
 import { createShape } from "./shape.js";
-
+const Tone = window.Tone;
 // ---------- Settings ----------
 // Settings variables should contain all of the "fixed" parts of your programs
 // For example: which notes you can play, how fast things move, the tempo.
 const note = "C4"; // the note played when the pointer goes down
-
 // ---------- State ----------
 // State variables are the parts of your program that change over time.
 // For example: where the pointer is, how fast it's moving, or whether a drone is on.
-
 // ---------- Sound ----------
 // Make the instruments and plug them into the speakers.
 const synth = new Tone.PolySynth(Tone.Synth).toDestination(); // can play several notes at once
-
 // ---------- Update ----------
 // Update the state. This is called every 100ms.
 function update() {
-  setTimeout(update, 100); // call update() again in 100 milliseconds
+    setTimeout(update, 100); // call update() again in 100 milliseconds
 }
-
 // ---------- Use ----------
 // Use the state to make sound and move shapes. This is called every 100ms.
 function use() {
-  setTimeout(use, 100); // call use() again in 100 milliseconds
+    setTimeout(use, 100); // call use() again in 100 milliseconds
 }
-
 // ---------- Controls (Event Handlers) ----------
 // Runs every time the pointer goes down: a click, a tap or a pen touch.
 function pointerDown(event) {
-  Tone.start(); // browsers only allow sound after the player has pressed something
-
-  console.log("Pointer down at", event.clientX, event.clientY);
-  synth.triggerAttackRelease(note, "8n"); // play the note for an eighth note
+    Tone.start(); // browsers only allow sound after the player has pressed something
+    console.log("Pointer down at", event.clientX, event.clientY);
+    synth.triggerAttackRelease(note, "8n"); // play the note for an eighth note
 }
-
 // ---------- Setup ----------
 // Setup is run once, at the start of the program. It sets everything up for us!
 function setup() {
-  update(); // start the update loop
-  use(); // start the use loop
-
-  // Example: a shape near the middle of the window. Replace it with your own.
-  const example = createShape("example");
-  example.setPosition(0.5, 0.5);
-
-  // Put your event listener code here
-  window.addEventListener("pointerdown", pointerDown);
+    update(); // start the update loop
+    use(); // start the use loop
+    // Example: a shape near the middle of the window. Replace it with your own.
+    const example = createShape("example");
+    example.setPosition(0.5, 0.5);
+    // Put your event listener code here
+    window.addEventListener("pointerdown", pointerDown);
 }
-
 setup(); // Always remember to call setup()!
