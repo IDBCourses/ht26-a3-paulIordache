@@ -4,7 +4,7 @@
  * @param {HTMLElement|null} [current=null] - Element allowed to keep the id.
  * @returns {string}
  */
-function uniqueId(id, current = null) {
+const uniqueId = (id, current = null) => {
   let newId = id;
   let counter = 1;
   while (
@@ -34,6 +34,8 @@ export class Shape {
     this.height = 100;
     this.roundedness = 0;
     this.rotation = 0;
+    this.dx = 3;
+    this.dy = 3;
   }
 
   /** Set the colour using HSL(A): h 0..360, s and l in percent, a 0..1. */

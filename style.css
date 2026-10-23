@@ -3,7 +3,7 @@
 .shape {
   width: 100px;
   height: 100px;
-  background-color: deeppink;
+  background-color: blueviolet;
   /* Positioned from the top-left of the window; setPosition() moves it from there. */
   position: absolute;
   top: 0;
