@@ -44,19 +44,17 @@ let shapeStyleCSS = getComputedStyle(elem); // needed for width and height
 let pointerOnHtmlElement = false; // if pointer is held down on the HTML element
 
 let directionX = 0,
-  directionY = 0,
   oldX = 0,
-  oldY = 0,
-  mousemovemethod = (e) => {
+  mouseDirectionXAxis = (e) => {
     // find out in which direction does the mouse move
     [directionX, oldX] = e.pageX > oldX ? [1, e.pageX] : [-1, e.pageX];
-    [directionY, oldY] = e.pageY > oldY ? [1, e.pageY] : [-1, e.pageY];
   };
 
 // ---------- Update ----------
 // Update the state. This is called every 100ms.
 const update = (event) => {
   setTimeout(update, 100); // call update() again in 100 milliseconds
+  circle.dx *= 0.99;
 };
 
 // ---------- Use ----------
@@ -64,43 +62,69 @@ const update = (event) => {
 const use = () => {
   setTimeout(use, 10); // call use() again in 100 milliseconds
 
-  if (pointerOnHtmlElement === false) {
-    if (
-      circle.y + parseInt(shapeStyleCSS.height, 10) + 50 >
-        window.screen.height ||
-      circle.y <= 0
-    ) {
-      circle.dy = -circle.dy;
-      synth.triggerAttackRelease("G#1", "8n");
-    } else {
-      circle.dy += gravity;
-    }
-
-    if (
-      circle.x + parseInt(shapeStyleCSS.width, 10) > window.screen.width ||
-      circle.x <= 0
-    ) {
-      circle.dx = -circle.dx;
-      synth.triggerAttackRelease("E1", "16n");
-    }
-    circle.setPositionPixels(circle.x + circle.dx, circle.y + circle.dy);
+  if (pointerOnHtmlElement) {
+    return;
   }
 
-  circle.setColour(++circle.hue % 360);
+  if (
+    circle.y + parseInt(shapeStyleCSS.height, 10) + circle.dy >
+      window.screen.height ||
+    circle.y + circle.dy <= 0
+  ) {
+    circle.dy *= -0.9;
+    circle.dy = circle.dy < 0 ? Math.min(-7, circle.dy) : circle.dy;
+    synth.triggerAttackRelease("G#1", "8n");
+  }
+  circle.dy += gravity;
+
+  if (
+    circle.x + parseInt(shapeStyleCSS.width, 10) + circle.dx >
+      window.screen.width ||
+    circle.x + circle.dx <= 0
+  ) {
+    circle.dx *= -0.8;
+    synth.triggerAttackRelease("E1", "16n");
+  }
+  circle.setPositionPixels(circle.x + circle.dx, circle.y + circle.dy);
+
+  // circle.setColour(++circle.hue % 360);
 };
+
+var timestamp = null;
+var lastMouseX = null;
+var lastMouseY = null;
+var speedX = 0;
+var speedY = 0;
 
 // ---------- Controls (Event Handlers) ----------
 // Runs every time the pointer goes down: a click, a tap or a pen touch.
-let captureX = 0,
-  captureY = 0;
-const pointerMove = (event) => {
-  mousemovemethod(event);
+const pointerMove = (e) => {
+  mouseDirectionXAxis(e);
+
+  if (timestamp === null) {
+    timestamp = Date.now();
+    lastMouseX = e.screenX;
+    lastMouseY = e.screenY;
+    return;
+  }
+
+  var now = Date.now();
+  var dt = now - timestamp;
+  var dx = e.screenX - lastMouseX;
+  var dy = e.screenY - lastMouseY;
+  speedX = Math.round((dx / dt) * 0.2);
+  speedY = Math.round((dy / dt) * 0.7);
+
+  timestamp = now;
+  lastMouseX = e.screenX;
+  lastMouseY = e.screenY;
+  console.log("MOUSE SPEED X Y: ", speedX, speedY);
 
   if (pointerOnHtmlElement === true) {
-    circle.setPositionPixels(event.clientX, event.clientY);
+    circle.setPositionPixels(e.clientX, e.clientY);
     [circle.dx, circle.dy] = [
-      directionX * Math.abs(circle.dx),
-      directionY * Math.abs(circle.dy),
+      Math.abs(Math.max(12, circle.dx)),
+      Math.abs(Math.max(12, circle.dy)),
     ];
   }
 };
@@ -109,18 +133,13 @@ const pointerDown = (event) => {
   // check the html element bounding
   //
 
-  if (
+  pointerOnHtmlElement =
     event.clientX >= circle.x &&
     event.clientX <= circle.x + parseInt(shapeStyleCSS.width, 10) &&
     event.clientY >= circle.y &&
     event.clientY <= circle.y + parseInt(shapeStyleCSS.height, 10)
-  ) {
-    if (pointerOnHtmlElement === false) {
-      captureX = circle.x;
-      captureY = circle.y;
-    }
-    pointerOnHtmlElement = true;
-  }
+      ? true
+      : pointerOnHtmlElement;
 };
 
 // ---------- Setup ----------
@@ -137,6 +156,14 @@ function setup() {
   window.addEventListener("pointermove", pointerMove);
   window.addEventListener("pointerdown", pointerDown);
   window.addEventListener("pointerup", () => {
+    if (pointerOnHtmlElement === true) {
+      circle.dx *= speedX;
+      circle.dy *= speedY;
+      if (speedX === 0) {
+        circle.dx += directionX;
+      }
+    }
+
     pointerOnHtmlElement = false;
   });
 }

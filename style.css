@@ -3,7 +3,9 @@
 .shape {
   width: 100px;
   height: 100px;
-  background-color: blueviolet;
+
+  background-image: url('face.png');
+  background-size: contain;
   /* Positioned from the top-left of the window; setPosition() moves it from there. */
   position: absolute;
   top: 0;
@@ -23,6 +25,7 @@ body {
   padding: 0;
   line-height: 1.5;
   background-color: #000;
+
   font-family: system-ui, sans-serif;
 }
 
