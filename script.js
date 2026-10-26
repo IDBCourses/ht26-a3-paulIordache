@@ -26,6 +26,17 @@ import { createShape, Shape } from "./shape.js";
 const circle = createShape("example", "shape");
 circle.setPositionPixels(window.screen.width / 2, window.screen.height / 2);
 
+const title = createShape("tit", "title");
+title.setPositionPixels(250, 360);
+
+function randomIntFromRange(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+function randomColor(colors) {
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
 // ---------- Settings ----------
 // Settings variables should contain all of the "fixed" parts of your programs
 // For example: which notes you can play, how fast things move, the tempo.
@@ -35,13 +46,20 @@ const gravity = 0.2;
 // ---------- State ----------
 // State variables are the parts of your program that change over time.
 // For example: where the pointer is, how fast it's moving, or whether a drone is on.
+const mouse = {
+  x: window.screen.width / 2,
+  y: window.screen.height / 2,
+  pointerOnHtmlElement: false, // if pointer is held down on the HTML element
+};
+let followingCursor = false;
+let moveTitle = false;
+
 
 // ---------- Sound ----------
 // Make the instruments and plug them into the speakers.
 const synth = new Tone.PolySynth(Tone.Synth).toDestination(); // can play several notes at once
 let elem = document.querySelector(".shape");
 let shapeStyleCSS = getComputedStyle(elem); // needed for width and height
-let pointerOnHtmlElement = false; // if pointer is held down on the HTML element
 
 let directionX = 0,
   oldX = 0,
@@ -62,7 +80,29 @@ const update = (event) => {
 const use = () => {
   setTimeout(use, 10); // call use() again in 100 milliseconds
 
-  if (pointerOnHtmlElement) {
+  if (moveTitle === true) {
+    title.setPositionPixels(title.x, title.y - 2);
+  }
+
+  if (mouse.pointerOnHtmlElement) {
+    return;
+  }
+
+  if (followingCursor) {
+    Tone.Transport.bpm.value =
+      700 -
+      Math.min(
+        700,
+        Math.sqrt(
+          Math.abs(
+            Math.pow(mouse.x - circle.x, 2) + Math.pow(mouse.y - circle.y, 2),
+          ),
+        ),
+      );
+    circle.setPositionPixels(
+      circle.x + (mouse.x - circle.x) * 0.001,
+      circle.y + (mouse.y - circle.y) * 0.001,
+    );
     return;
   }
 
@@ -90,11 +130,11 @@ const use = () => {
   // circle.setColour(++circle.hue % 360);
 };
 
-var timestamp = null;
-var lastMouseX = null;
-var lastMouseY = null;
-var speedX = 0;
-var speedY = 0;
+let timestamp = null;
+let lastMouseX = null;
+let lastMouseY = null;
+let speedX = 0;
+let speedY = 0;
 
 // ---------- Controls (Event Handlers) ----------
 // Runs every time the pointer goes down: a click, a tap or a pen touch.
@@ -108,19 +148,20 @@ const pointerMove = (e) => {
     return;
   }
 
-  var now = Date.now();
-  var dt = now - timestamp;
-  var dx = e.screenX - lastMouseX;
-  var dy = e.screenY - lastMouseY;
+  let now = Date.now();
+  let dt = now - timestamp;
+  let dx = e.screenX - lastMouseX;
+  let dy = e.screenY - lastMouseY;
   speedX = Math.round((dx / dt) * 0.2);
   speedY = Math.round((dy / dt) * 0.7);
 
   timestamp = now;
   lastMouseX = e.screenX;
   lastMouseY = e.screenY;
-  console.log("MOUSE SPEED X Y: ", speedX, speedY);
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
 
-  if (pointerOnHtmlElement === true) {
+  if (mouse.pointerOnHtmlElement === true) {
     circle.setPositionPixels(e.clientX, e.clientY);
     [circle.dx, circle.dy] = [
       Math.abs(Math.max(12, circle.dx)),
@@ -128,44 +169,85 @@ const pointerMove = (e) => {
     ];
   }
 };
-
 const pointerDown = (event) => {
   // check the html element bounding
-  //
-
-  pointerOnHtmlElement =
+  mouse.pointerOnHtmlElement =
     event.clientX >= circle.x &&
     event.clientX <= circle.x + parseInt(shapeStyleCSS.width, 10) &&
     event.clientY >= circle.y &&
     event.clientY <= circle.y + parseInt(shapeStyleCSS.height, 10)
       ? true
-      : pointerOnHtmlElement;
+      : mouse.pointerOnHtmlElement;
 };
 
 // ---------- Setup ----------
 // Setup is run once, at the start of the program. It sets everything up for us!
-//
-//
+const synthhh = new Tone.PolySynth(Tone.MembraneSynth).toDestination();
+const synthA = new Tone.PolySynth().toDestination();
+const synthB = new Tone.MetalSynth().toDestination();
+const synthC = new Tone.MembraneSynth().toDestination();
 
-function setup() {
-  Tone.start();
+const now = Tone.now();
+synthhh.triggerAttack("D4", now);
+synthhh.triggerAttack("F4", now + 0.25);
+synthhh.triggerAttack("A4", now + 0.75);
+synthhh.triggerAttack("C5", now + 1);
+synthhh.triggerAttack("E5", now + 1.25);
+synthhh.triggerRelease(["D4", "F4", "A4", "C5", "E5"], now + 2.7);
 
+//play a note every sixteenth-note
+const loopA = new Tone.Loop((time) => {
+  synthhh.triggerAttackRelease("A2", "4n", time);
+}, "2n").start(0);
+
+const loopB = new Tone.Loop((time) => {
+  synth.triggerAttackRelease("C2", "2n", time);
+}, "1n").start(0);
+
+// Tone.Transport.bpm.rampTo(300, 10);
+//
+//play another note every off half-note,by starting it "2n"
+const loopC = new Tone.Loop((time) => {
+  synthhh.triggerAttackRelease("G4", "8n", time);
+}, "4n").start(0);
+
+const loopD = new Tone.Loop((time) => {
+  synthhh.triggerAttackRelease("G4", "8n", time);
+}, "2n").start(0);
+
+const setup = () => {
   update(); // start the update loop
   use(); // start the use loop
 
   window.addEventListener("pointermove", pointerMove);
   window.addEventListener("pointerdown", pointerDown);
   window.addEventListener("pointerup", () => {
-    if (pointerOnHtmlElement === true) {
+    if (mouse.pointerOnHtmlElement === true) {
       circle.dx *= speedX;
       circle.dy *= speedY;
+
       if (speedX === 0) {
         circle.dx += directionX;
       }
     }
-
-    pointerOnHtmlElement = false;
+    mouse.pointerOnHtmlElement = false;
   });
-}
+  window.addEventListener("keypress", async (event) => {
+    if (event.ket === " ") {
+      moveTitle = true;
+      await Tone.start();
+    }
+
+    if (event.key === "a") {
+      followingCursor = !followingCursor;
+    }
+
+    if (followingCursor) {
+      await Tone.Transport.start();
+    } else {
+      await Tone.Transport.stop();
+    }
+  });
+};
 
 setup(); // Always remember to call setup()!
