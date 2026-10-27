@@ -4,7 +4,7 @@
   width: 100px;
   height: 100px;
 
-  background-image: url('weird.jpg');
+  background-image: url('face.png');
   background-size: contain;
   /* Positioned from the top-left of the window; setPosition() moves it from there. */
   position: absolute;

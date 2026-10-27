@@ -24,7 +24,7 @@
 import { createShape, Shape } from "./shape.js";
 
 const circle = createShape("example", "shape");
-circle.setPositionPixels(window.screen.width / 2, window.screen.height / 2);
+circle.setPositionPixels(window.innerWidth / 2, window.innerHeight / 2);
 
 const title = createShape("tit", "title");
 title.setPositionPixels(250, 360);
@@ -47,8 +47,8 @@ const gravity = 0.2;
 // State variables are the parts of your program that change over time.
 // For example: where the pointer is, how fast it's moving, or whether a drone is on.
 const mouse = {
-  x: window.screen.width / 2,
-  y: window.screen.height / 2,
+  x: window.innerWidth / 2,
+  y: window.innerHeight / 2,
   pointerOnHtmlElement: false, // if pointer is held down on the HTML element
 };
 let followingCursor = false;
@@ -108,7 +108,7 @@ const use = () => {
 
   if (
     circle.y + parseInt(shapeStyleCSS.height, 10) + circle.dy >
-      window.screen.height ||
+      window.innerHeight ||
     circle.y + circle.dy <= 0
   ) {
     circle.dy *= -0.9;
@@ -119,7 +119,7 @@ const use = () => {
 
   if (
     circle.x + parseInt(shapeStyleCSS.width, 10) + circle.dx >
-      window.screen.width ||
+      window.innerWidth ||
     circle.x + circle.dx <= 0
   ) {
     circle.dx *= -0.8;
@@ -232,10 +232,10 @@ const setup = () => {
     }
     mouse.pointerOnHtmlElement = false;
   });
-  window.addEventListener("keypress", async (event) => {
-    if (event.ket === " ") {
+  window.addEventListener("keypress",  (event) => {
+    if (event.key === " ") {
       moveTitle = true;
-      await Tone.start();
+      Tone.start();
     }
 
     if (event.key === "a") {
@@ -243,9 +243,9 @@ const setup = () => {
     }
 
     if (followingCursor) {
-      await Tone.Transport.start();
+      Tone.Transport.start();
     } else {
-      await Tone.Transport.stop();
+      Tone.Transport.stop();
     }
   });
 };
