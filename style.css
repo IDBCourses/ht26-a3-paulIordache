@@ -3,12 +3,35 @@
 .shape {
   width: 100px;
   height: 100px;
-  background-color: deeppink;
+
+  background-image: url('face.png');
+  background-size: contain;
   /* Positioned from the top-left of the window; setPosition() moves it from there. */
   position: absolute;
+
   top: 0;
   left: 0;
-  border-radius: 50%;
+  border-radius: 500%;
+}
+
+.rectangle {
+    width: 1px;
+    height: 20px;
+    position: absolute;
+    background-color: #21A;
+    top: 0;
+    left: 0;
+    border-radius: 0%;
+}
+
+.title {
+    width: 1000px;
+    height: 250px;
+    position: absolute;
+    background-image: url('ascii.png');
+    background-size: 1000px;
+    top: 0;
+    left: 0;
 }
 
 /* Prevent padding and border from affecting element width. */
@@ -22,6 +45,8 @@ body {
   margin: 0;
   padding: 0;
   line-height: 1.5;
+  background-color: #000;
+
   font-family: system-ui, sans-serif;
 }
 
