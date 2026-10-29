@@ -23,6 +23,7 @@
 
 import { createShape, Shape } from "./shape.js";
 import { getCSS } from "./utilities.js";
+import { Channel } from "./channel.js";
 
 const circle = createShape("example", "shape");
 circle.setPositionPixels(1300, 20);
@@ -42,19 +43,75 @@ function randomColor(colors) {
 // Settings variables should contain all of the "fixed" parts of your programs
 // For example: which notes you can play, how fast things move, the tempo.
 const gravity = 0.2;
+const keyboardEvents = {
+  " ": () => {
+    if (!titleMoved) {
+      moveTitle = true;
+      const now = Tone.now();
+      membraneSynth.triggerAttack("D4", now);
+      membraneSynth.triggerAttack("F4", now + 0.25);
+      membraneSynth.triggerAttack("A4", now + 0.75);
+      membraneSynth.triggerAttack("C5", now + 1);
+      membraneSynth.triggerAttack("E5", now + 1.25);
+      membraneSynth.triggerRelease(["D4", "F4", "A4", "C5", "E5"], now + 2.7);
+    }
+  },
+  a: () => {
+    followingCursor = !followingCursor;
+  },
+  c: () => {
+    changeDay = !changeDay;
+  },
+};
 
 // ---------- State ----------
 // State variables are the parts of your program that change over time.
 // For example: where the pointer is, how fast it's moving, or whether a drone is on.
+//
+
+let timestamp = null;
+let lastMouseX = null;
+let lastMouseY = null;
+let speedX = 0;
+let speedY = 0;
+let rawX = 0;
+let rawY = 0;
 const mouse = {
   x: window.innerWidth / 2,
   y: window.innerHeight / 2,
   pointerOnHtmlElement: false, // if pointer is held down on the HTML element
 };
+
+let rgbGradient = {
+  R: new Channel(135),
+  G: new Channel(206),
+  B: new Channel(235),
+  rgbToHex: () => {
+    const turnToHex = (channel) => {
+      return `${channel.current.toString(16).padStart(2, "0")}`;
+    };
+
+    return (
+      "#" +
+      turnToHex(rgbGradient.R) +
+      turnToHex(rgbGradient.G) +
+      turnToHex(rgbGradient.B)
+    );
+  },
+  checkTarget: () => {
+    return (
+      rgbGradient.R.current === rgbGradient.R.target &&
+      rgbGradient.G.current === rgbGradient.G.target &&
+      rgbGradient.B.current === rgbGradient.B.target
+    );
+  },
+};
+
 let followingCursor = false;
 
 let moveTitle = false;
 let titleMoved = false;
+let changeDay = false;
 
 // ---------- Sound ----------
 // Make the instruments and plug them into the speakers.
@@ -81,6 +138,13 @@ const update = (event) => {
     moveTitle = false;
     titleMoved = true;
   }
+
+  if (rgbGradient.checkTarget() === false) {
+    Object.keys(rgbGradient).forEach((key) => {
+      rgbGradient[key].current = Math.max(rgbGradient[key].current - 1, 0);
+    });
+  }
+  document.body.style.backgroundColor = rgbGradient.rgbToHex();
 };
 
 // ---------- Use ----------
@@ -131,18 +195,11 @@ const use = () => {
     membraneSynth.triggerAttackRelease("E1", "16n");
   }
   circle.setPositionPixels(circle.x + circle.dx, circle.y + circle.dy);
-
-  // circle.setColour(++circle.hue % 360);
 };
-
-let timestamp = null;
-let lastMouseX = null;
-let lastMouseY = null;
-let speedX = 0;
-let speedY = 0;
 
 // ---------- Controls (Event Handlers) ----------
 // Runs every time the pointer goes down: a click, a tap or a pen touch.
+//
 const pointerMove = (e) => {
   mouseDirectionXAxis(e);
 
@@ -159,6 +216,8 @@ const pointerMove = (e) => {
   let dy = e.screenY - lastMouseY;
   speedX = Math.round((dx / dt) * 0.2);
   speedY = Math.round((dy / dt) * 0.7);
+  rawX = Math.round((dx / dt) * 100);
+  rawY = Math.round((dy / dt) * 100);
 
   timestamp = now;
   lastMouseX = e.screenX;
@@ -166,6 +225,16 @@ const pointerMove = (e) => {
   mouse.x = e.clientX;
   mouse.y = e.clientY;
 
+  if (changeDay === true && (Math.abs(rawX) > 500 || Math.abs(rawY) > 500)) {
+    if (rgbGradient.checkTarget() === false) {
+      Object.keys(rgbGradient).forEach((key) => {
+        rgbGradient[key].current = Math.min(
+          rgbGradient[key].current + 3,
+          rgbGradient[key].target,
+        );
+      });
+    }
+  }
   if (mouse.pointerOnHtmlElement === true) {
     circle.setPositionPixels(e.clientX, e.clientY);
     [circle.dx, circle.dy] = [
@@ -204,27 +273,6 @@ const loopC = new Tone.Loop((time) => {
 const loopD = new Tone.Loop((time) => {
   membraneSynth.triggerAttackRelease("G4", "8n", time);
 }, "2n").start(0);
-
-const keyboardEvents = {
-  " ": () => {
-    if (!titleMoved) {
-      moveTitle = true;
-      const now = Tone.now();
-      membraneSynth.triggerAttack("D4", now);
-      membraneSynth.triggerAttack("F4", now + 0.25);
-      membraneSynth.triggerAttack("A4", now + 0.75);
-      membraneSynth.triggerAttack("C5", now + 1);
-      membraneSynth.triggerAttack("E5", now + 1.25);
-      membraneSynth.triggerRelease(["D4", "F4", "A4", "C5", "E5"], now + 2.7);
-    }
-  },
-  a: () => {
-    followingCursor = !followingCursor;
-  },
-  n: () => {
-    circle.setColour(++circle.hue % 360);
-  },
-};
 
 const setup = () => {
   update(); // start the update loop
