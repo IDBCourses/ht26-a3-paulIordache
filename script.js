@@ -22,11 +22,12 @@
  */
 
 import { createShape, Shape } from "./shape.js";
+import { getCSS } from "./utilities.js";
 
 const circle = createShape("example", "shape");
-circle.setPositionPixels(window.innerWidth / 2, window.innerHeight / 2);
+circle.setPositionPixels(1300, 20);
 
-const title = createShape("tit", "title");
+let title = createShape("tit", "title");
 title.setPositionPixels(250, 360);
 
 function randomIntFromRange(min, max) {
@@ -40,7 +41,6 @@ function randomColor(colors) {
 // ---------- Settings ----------
 // Settings variables should contain all of the "fixed" parts of your programs
 // For example: which notes you can play, how fast things move, the tempo.
-const note = "C4"; // the note played when the pointer goes down
 const gravity = 0.2;
 
 // ---------- State ----------
@@ -52,14 +52,13 @@ const mouse = {
   pointerOnHtmlElement: false, // if pointer is held down on the HTML element
 };
 let followingCursor = false;
-let moveTitle = false;
 
+let moveTitle = false;
+let titleMoved = false;
 
 // ---------- Sound ----------
 // Make the instruments and plug them into the speakers.
 const synth = new Tone.PolySynth(Tone.Synth).toDestination(); // can play several notes at once
-let elem = document.querySelector(".shape");
-let shapeStyleCSS = getComputedStyle(elem); // needed for width and height
 
 let directionX = 0,
   oldX = 0,
@@ -73,18 +72,26 @@ let directionX = 0,
 const update = (event) => {
   setTimeout(update, 100); // call update() again in 100 milliseconds
   circle.dx *= 0.99;
+
+  // first check for class null before getting the css
+  // delete the title when offscreen
+  if (title != null && title.y + parseInt(getCSS(".title").height, 10) < 0) {
+    title.element.remove();
+    title = null;
+    moveTitle = false;
+    titleMoved = true;
+  }
 };
 
 // ---------- Use ----------
 // Use the state to make sound and move shapes. This is called every 100ms.
+
 const use = () => {
   setTimeout(use, 10); // call use() again in 100 milliseconds
 
-  if (moveTitle === true) {
-    title.setPositionPixels(title.x, title.y - 2);
-  }
+  moveTitle && title.setPositionPixels(title.x, title.y - 2);
 
-  if (mouse.pointerOnHtmlElement) {
+  if (mouse.pointerOnHtmlElement || !titleMoved) {
     return;
   }
 
@@ -94,36 +101,34 @@ const use = () => {
       Math.min(
         700,
         Math.sqrt(
-          Math.abs(
-            Math.pow(mouse.x - circle.x, 2) + Math.pow(mouse.y - circle.y, 2),
-          ),
+          Math.pow(mouse.x - circle.x, 2) + Math.pow(mouse.y - circle.y, 2),
         ),
       );
     circle.setPositionPixels(
-      circle.x + (mouse.x - circle.x) * 0.001,
-      circle.y + (mouse.y - circle.y) * 0.001,
+      circle.x + (mouse.x - circle.x) * 0.005,
+      circle.y + (mouse.y - circle.y) * 0.005,
     );
     return;
   }
 
   if (
-    circle.y + parseInt(shapeStyleCSS.height, 10) + circle.dy >
+    circle.y + parseInt(getCSS(".shape").height, 10) + circle.dy >
       window.innerHeight ||
     circle.y + circle.dy <= 0
   ) {
     circle.dy *= -0.9;
     circle.dy = circle.dy < 0 ? Math.min(-7, circle.dy) : circle.dy;
-    synth.triggerAttackRelease("G#1", "8n");
+    membraneSynth.triggerAttackRelease("G#1", "8n");
   }
   circle.dy += gravity;
 
   if (
-    circle.x + parseInt(shapeStyleCSS.width, 10) + circle.dx >
+    circle.x + parseInt(getCSS(".shape").width, 10) + circle.dx >
       window.innerWidth ||
     circle.x + circle.dx <= 0
   ) {
     circle.dx *= -0.8;
-    synth.triggerAttackRelease("E1", "16n");
+    membraneSynth.triggerAttackRelease("E1", "16n");
   }
   circle.setPositionPixels(circle.x + circle.dx, circle.y + circle.dy);
 
@@ -173,51 +178,58 @@ const pointerDown = (event) => {
   // check the html element bounding
   mouse.pointerOnHtmlElement =
     event.clientX >= circle.x &&
-    event.clientX <= circle.x + parseInt(shapeStyleCSS.width, 10) &&
+    event.clientX <= circle.x + parseInt(getCSS(".shape").width, 10) &&
     event.clientY >= circle.y &&
-    event.clientY <= circle.y + parseInt(shapeStyleCSS.height, 10)
+    event.clientY <= circle.y + parseInt(getCSS(".shape").height, 10)
       ? true
       : mouse.pointerOnHtmlElement;
 };
 
 // ---------- Setup ----------
 // Setup is run once, at the start of the program. It sets everything up for us!
-const synthhh = new Tone.PolySynth(Tone.MembraneSynth).toDestination();
-const synthA = new Tone.PolySynth().toDestination();
-const synthB = new Tone.MetalSynth().toDestination();
-const synthC = new Tone.MembraneSynth().toDestination();
+const membraneSynth = new Tone.PolySynth(Tone.MembraneSynth).toDestination();
 
-const now = Tone.now();
-synthhh.triggerAttack("D4", now);
-synthhh.triggerAttack("F4", now + 0.25);
-synthhh.triggerAttack("A4", now + 0.75);
-synthhh.triggerAttack("C5", now + 1);
-synthhh.triggerAttack("E5", now + 1.25);
-synthhh.triggerRelease(["D4", "F4", "A4", "C5", "E5"], now + 2.7);
-
-//play a note every sixteenth-note
 const loopA = new Tone.Loop((time) => {
-  synthhh.triggerAttackRelease("A2", "4n", time);
+  membraneSynth.triggerAttackRelease("A2", "4n", time);
 }, "2n").start(0);
 
 const loopB = new Tone.Loop((time) => {
   synth.triggerAttackRelease("C2", "2n", time);
 }, "1n").start(0);
 
-// Tone.Transport.bpm.rampTo(300, 10);
-//
-//play another note every off half-note,by starting it "2n"
 const loopC = new Tone.Loop((time) => {
-  synthhh.triggerAttackRelease("G4", "8n", time);
+  membraneSynth.triggerAttackRelease("G4", "8n", time);
 }, "4n").start(0);
 
 const loopD = new Tone.Loop((time) => {
-  synthhh.triggerAttackRelease("G4", "8n", time);
+  membraneSynth.triggerAttackRelease("G4", "8n", time);
 }, "2n").start(0);
+
+const keyboardEvents = {
+  " ": () => {
+    if (!titleMoved) {
+      moveTitle = true;
+      const now = Tone.now();
+      membraneSynth.triggerAttack("D4", now);
+      membraneSynth.triggerAttack("F4", now + 0.25);
+      membraneSynth.triggerAttack("A4", now + 0.75);
+      membraneSynth.triggerAttack("C5", now + 1);
+      membraneSynth.triggerAttack("E5", now + 1.25);
+      membraneSynth.triggerRelease(["D4", "F4", "A4", "C5", "E5"], now + 2.7);
+    }
+  },
+  a: () => {
+    followingCursor = !followingCursor;
+  },
+  n: () => {
+    circle.setColour(++circle.hue % 360);
+  },
+};
 
 const setup = () => {
   update(); // start the update loop
   use(); // start the use loop
+  Tone.start();
 
   window.addEventListener("pointermove", pointerMove);
   window.addEventListener("pointerdown", pointerDown);
@@ -232,15 +244,10 @@ const setup = () => {
     }
     mouse.pointerOnHtmlElement = false;
   });
-  window.addEventListener("keypress",  (event) => {
-    if (event.key === " ") {
-      moveTitle = true;
-      Tone.start();
-    }
-
-    if (event.key === "a") {
-      followingCursor = !followingCursor;
-    }
+  window.addEventListener("keypress", (event) => {
+    !event.repeat &&
+      Object.hasOwn(keyboardEvents, event.key) == true &&
+      keyboardEvents[event.key]();
 
     if (followingCursor) {
       Tone.Transport.start();
