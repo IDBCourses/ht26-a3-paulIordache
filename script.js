@@ -25,6 +25,11 @@ import { createShape, Shape } from "./shape.js";
 import { getCSS } from "./utilities.js";
 import { Channel } from "./channel.js";
 
+// ---------- Settings ----------
+// Settings variables should contain all of the "fixed" parts of your programs
+// For example: which notes you can play, how fast things move, the tempo.
+//
+
 const circle = createShape("example", "shape");
 circle.setPositionPixels(1300, 20);
 
@@ -39,9 +44,6 @@ function randomColor(colors) {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-// ---------- Settings ----------
-// Settings variables should contain all of the "fixed" parts of your programs
-// For example: which notes you can play, how fast things move, the tempo.
 const gravity = 0.2;
 const keyboardEvents = {
   " ": () => {
@@ -60,13 +62,28 @@ const keyboardEvents = {
     followingCursor = !followingCursor;
   },
   c: () => {
-    changeDay = !changeDay;
+    if (rgbGradient.checkTarget()) {
+      changeDay = false;
+    } else {
+      changeDay = !changeDay;
+    }
   },
 };
+
+for (let i = 0; i < 100; i++) {
+  let star = createShape("star");
+  star.setSize(1);
+  star.setColour(1, 1, 99);
+  star.setPositionPixels(
+    randomIntFromRange(0, window.innerWidth),
+    randomIntFromRange(0, window.innerHeight),
+  );
+}
 
 // ---------- State ----------
 // State variables are the parts of your program that change over time.
 // For example: where the pointer is, how fast it's moving, or whether a drone is on.
+//
 //
 
 let timestamp = null;
@@ -74,8 +91,7 @@ let lastMouseX = null;
 let lastMouseY = null;
 let speedX = 0;
 let speedY = 0;
-let rawX = 0;
-let rawY = 0;
+
 const mouse = {
   x: window.innerWidth / 2,
   y: window.innerHeight / 2,
@@ -152,6 +168,7 @@ const update = (event) => {
 
 const use = () => {
   setTimeout(use, 10); // call use() again in 100 milliseconds
+  speedChangeDay = Math.min(speedChangeDay + 0.3, 1000);
 
   moveTitle && title.setPositionPixels(title.x, title.y - 2);
 
@@ -176,7 +193,9 @@ const use = () => {
   }
 
   if (
-    circle.y + parseInt(getCSS(".shape").height, 10) + circle.dy >
+    circle.y +
+      parseInt(getCSS("." + `${circle.element.className}`).height, 10) +
+      circle.dy >
       window.innerHeight ||
     circle.y + circle.dy <= 0
   ) {
@@ -187,7 +206,9 @@ const use = () => {
   circle.dy += gravity;
 
   if (
-    circle.x + parseInt(getCSS(".shape").width, 10) + circle.dx >
+    circle.x +
+      parseInt(getCSS("." + `${circle.element.className}`).width, 10) +
+      circle.dx >
       window.innerWidth ||
     circle.x + circle.dx <= 0
   ) {
@@ -200,6 +221,17 @@ const use = () => {
 // ---------- Controls (Event Handlers) ----------
 // Runs every time the pointer goes down: a click, a tap or a pen touch.
 //
+//
+
+let speedChangeDay = 1000;
+
+const triggerNote = () => {
+  setTimeout(triggerNote, speedChangeDay);
+  if (changeDay == true) {
+    synth.triggerAttackRelease("B3", "8n");
+  }
+};
+
 const pointerMove = (e) => {
   mouseDirectionXAxis(e);
 
@@ -216,8 +248,6 @@ const pointerMove = (e) => {
   let dy = e.screenY - lastMouseY;
   speedX = Math.round((dx / dt) * 0.2);
   speedY = Math.round((dy / dt) * 0.7);
-  rawX = Math.round((dx / dt) * 100);
-  rawY = Math.round((dy / dt) * 100);
 
   timestamp = now;
   lastMouseX = e.screenX;
@@ -225,16 +255,24 @@ const pointerMove = (e) => {
   mouse.x = e.clientX;
   mouse.y = e.clientY;
 
-  if (changeDay === true && (Math.abs(rawX) > 500 || Math.abs(rawY) > 500)) {
+  if (
+    changeDay === true &&
+    (Math.abs(speedX * 100) > 500 || Math.abs(speedY * 100) > 500)
+  ) {
     if (rgbGradient.checkTarget() === false) {
+      speedChangeDay = Math.max(speedChangeDay - 10, 100);
       Object.keys(rgbGradient).forEach((key) => {
         rgbGradient[key].current = Math.min(
           rgbGradient[key].current + 3,
           rgbGradient[key].target,
         );
       });
+    } else {
+      circle.setClass("moon");
+      changeDay = false;
     }
   }
+
   if (mouse.pointerOnHtmlElement === true) {
     circle.setPositionPixels(e.clientX, e.clientY);
     [circle.dx, circle.dy] = [
@@ -247,9 +285,13 @@ const pointerDown = (event) => {
   // check the html element bounding
   mouse.pointerOnHtmlElement =
     event.clientX >= circle.x &&
-    event.clientX <= circle.x + parseInt(getCSS(".shape").width, 10) &&
+    event.clientX <=
+      circle.x +
+        parseInt(getCSS("." + `${circle.element.className}`).width, 10) &&
     event.clientY >= circle.y &&
-    event.clientY <= circle.y + parseInt(getCSS(".shape").height, 10)
+    event.clientY <=
+      circle.y +
+        parseInt(getCSS("." + `${circle.element.className}`).height, 10)
       ? true
       : mouse.pointerOnHtmlElement;
 };
@@ -277,6 +319,7 @@ const loopD = new Tone.Loop((time) => {
 const setup = () => {
   update(); // start the update loop
   use(); // start the use loop
+  triggerNote();
   Tone.start();
 
   window.addEventListener("pointermove", pointerMove);
