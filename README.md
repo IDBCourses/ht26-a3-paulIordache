@@ -1,8 +1,8 @@
 # My instrument
 
-**Play it here:** <!-- Paste your GitHub Pages link here, e.g. https://idbcourses.github.io/your-repo-name/ -->
+**Play it here:** https://idbcourses.github.io/ht26-a3-paulIordache/
 
-**Name:** <!-- Your name and MAU ID -->
+**Name:** Paul-Cristian Iordache
 
 <!-- One or two sentences: what kind of instrument is it, and what is it like to play? -->
 
@@ -10,10 +10,12 @@
 
 <!-- Fill in the table with a row for everything the player can do with the pointer: clicking, moving slowly or fast, moving in circles, holding still... Say what happens to the sound and to the shapes. If you added keys, give them rows too. -->
 
-| When you...  | The sound...                         | The shapes... |
-| ------------ | ------------------------------------ | ------------- |
-| Click or tap | Plays a C4 (the example: replace it) | Nothing yet   |
-|              |                                      |               |
+| When you... | The sound... | The shapes... |
+| :--- | :--- | :--- |
+| **Click and drag the circle** | Plays low bass notes (`G#1` and `E1`) when the thrown circle bounces off the screen edges | The circle can be grabbed, dragged, and thrown with gravity and momentum |
+| **Press Spacebar (` `)** | Plays a melodic chord progression (`D4`, `F4`, `A4`, `C5`, `E5`) and starts the app | The title text slides upward and disappears off-screen (cannot be reused)|
+| **Press 'a'** | Tempo is modified dynamically based on cursor distance, plays a melody when ON | The circle switches to cursor-tracking mode and follows the pointer |
+| **Press 'c' (and move the mouse rapidly)** | Triggers periodic notes (`B3`) that accelerate with faster mouse movement | The background color transitions (day/night effect) and the circle transforms into a sun |
 
 <!-- Anything else a player needs to know: how to get started, a good thing to try first. -->
 
